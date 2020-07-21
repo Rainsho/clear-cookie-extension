@@ -1,24 +1,43 @@
-function groupBy(arr, prop = 'domain') {
-  const ret = {};
+class Cache {
+  constructor() {
+    this._cache = {};
+  }
 
-  for (let i = 0; i < arr.length; i++) {
-    const c = arr[i];
-    const v = c[prop];
+  addAll(cookies) {
+    for (let i = 0; i < cookies.length; i++) {
+      const c = cookies[i];
+      const d = c.domain;
 
-    if (!ret[v]) {
-      ret[v] = [c];
-    } else {
-      ret[v].push(c);
+      if (!this._cache[d]) {
+        this._cache[d] = [c];
+      } else {
+        this._cache[d].push(c);
+      }
     }
   }
 
-  return ret;
+  getDomains() {
+    return Object.keys(this._cache);
+  }
+
+  getByDomain(domain) {
+    return this._cache[domain] || [];
+  }
+
+  _removeCookie(cookie) {
+    const url = 'http' + (cookie.secure ? 's' : '') + '://' + cookie.domain + cookie.path;
+    chrome.cookies.remove({ url: url, name: cookie.name });
+  }
+
+  removeByDomain(domain) {
+    this.getByDomain(domain).forEach(cookie => this._removeCookie(cookie));
+  }
 }
 
-function removeCookie(cookie) {
-  const url = 'http' + (cookie.secure ? 's' : '') + '://' + cookie.domain + cookie.path;
-  chrome.cookies.remove({ url: url, name: cookie.name });
-}
+const cache = new Cache();
+const table = document.querySelector('#cookies');
+const removeBtn = document.querySelector('#remove');
+const toggleBtn = document.querySelector('#toggle');
 
 chrome.tabs.getSelected(null, tab => {
   if (tab) {
@@ -26,33 +45,42 @@ chrome.tabs.getSelected(null, tab => {
     const topName = hostname.split('.').slice(-2).join('.');
 
     chrome.cookies.getAll({}, cookies => {
-      const current = cookies.filter(x => x.domain.includes(topName));
-      const grouped = groupBy(current);
+      cache.addAll(cookies.filter(x => x.domain.includes(topName)));
 
-      const table = document.querySelector('#cookies');
-      const button = document.querySelector('#remove');
-
-      const trs = Object.keys(grouped)
-        .map(k =>
-          [`<input type="checkbox" name="${k}" checked>`, k, grouped[k].length]
-            .map(c => `<td>${c}</td>`)
+      const trs = cache
+        .getDomains()
+        .map(domain =>
+          [
+            `<input type="checkbox" name="${domain}" checked>`,
+            domain,
+            cache.getByDomain(domain).length,
+          ]
+            .map(td => `<td>${td}</td>`)
             .join('')
         )
         .map(tds => `<tr>${tds}</tr>`)
         .join('');
 
       table.innerHTML += trs;
-
-      button.addEventListener('click', () => {
-        const boxes = document.querySelectorAll('input[type=checkbox]');
-
-        boxes.forEach(box => {
-          if (box.checked) {
-            (grouped[box.name] || []).forEach(c => removeCookie(c));
-            box.parentNode.parentNode.remove();
-          }
-        });
-      });
     });
   }
+});
+
+removeBtn.addEventListener('click', () => {
+  const boxes = document.querySelectorAll('input[type=checkbox]');
+
+  boxes.forEach(box => {
+    if (box.checked) {
+      cache.removeByDomain(box.name);
+      box.parentNode.parentNode.remove();
+    }
+  });
+});
+
+toggleBtn.addEventListener('click', () => {
+  const boxes = document.querySelectorAll('input[type=checkbox]');
+
+  boxes.forEach(box => {
+    box.checked = !box.checked;
+  });
 });
