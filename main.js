@@ -49,7 +49,7 @@ chrome.tabs.getSelected(null, tab => {
         boxes.forEach(box => {
           if (box.checked) {
             (grouped[box.name] || []).forEach(c => removeCookie(c));
-            table.removeChild(box.parentNode.parentNode);
+            box.parentNode.parentNode.remove();
           }
         });
       });
