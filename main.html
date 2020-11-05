@@ -3,12 +3,24 @@
 
 <head>
   <title>Clear Cookie Extension</title>
+
+  <style>
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
 </head>
 
 <body>
-  <div>
-    <button id="remove">DELETE</button>
-    <button id="toggle">TOGGLE</button>
+  <div class="btn-group">
+    <div>
+      <button id="remove">DELETE</button>
+      <button id="toggle">TOGGLE</button>
+    </div>
+    <div>
+      <button id="https">HTTPS</button>
+    </div>
   </div>
   <table id="cookies">
     <tr>

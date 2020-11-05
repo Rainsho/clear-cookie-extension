@@ -38,6 +38,7 @@ const cache = new Cache();
 const table = document.querySelector('#cookies');
 const removeBtn = document.querySelector('#remove');
 const toggleBtn = document.querySelector('#toggle');
+const httpsBtn = document.querySelector('#https');
 
 chrome.tabs.getSelected(null, tab => {
   if (tab) {
@@ -82,5 +83,18 @@ toggleBtn.addEventListener('click', () => {
 
   boxes.forEach(box => {
     box.checked = !box.checked;
+  });
+});
+
+httpsBtn.addEventListener('click', () => {
+  chrome.tabs.getSelected(null, tab => {
+    if (tab) {
+      const url = new URL(tab.url);
+
+      if (url.protocol === 'http:') {
+        url.protocol = 'https:';
+        chrome.tabs.update(tab.id, { url: url.href });
+      }
+    }
   });
 });
